@@ -1,33 +1,31 @@
 /* USER CODE BEGIN Header */
 /**
-  ******************************************************************************
-  * File Name          : freertos.c
-  * Description        : Code for freertos applications
-  ******************************************************************************
-  * @attention
-  *
-  * Copyright (c) 2026 STMicroelectronics.
-  * All rights reserved.
-  *
-  * This software is licensed under terms that can be found in the LICENSE file
-  * in the root directory of this software component.
-  * If no LICENSE file comes with this software, it is provided AS-IS.
-  *
-  ******************************************************************************
-  */
+ ******************************************************************************
+ * File Name          : freertos.c
+ * Description        : Code for freertos applications
+ ******************************************************************************
+ * @attention
+ *
+ * Copyright (c) 2026 STMicroelectronics.
+ * All rights reserved.
+ *
+ * This software is licensed under terms that can be found in the LICENSE file
+ * in the root directory of this software component.
+ * If no LICENSE file comes with this software, it is provided AS-IS.
+ *
+ ******************************************************************************
+ */
 /* USER CODE END Header */
 
 /* Includes ------------------------------------------------------------------*/
 #include "FreeRTOS.h"
-#include "key.h"
+#include "adc.h"
+#include "cmsis_os.h"
+#include "main.h"
 #include "nrf24.h"
 #include "spi.h"
-#include "stm32f103xb.h"
-#include "stm32f1xx.h"
-#include "stm32f1xx_hal_gpio.h"
 #include "task.h"
-#include "main.h"
-#include "cmsis_os.h"
+#include "utils.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -56,30 +54,30 @@
 /* Definitions for defaultTask */
 osThreadId_t defaultTaskHandle;
 const osThreadAttr_t defaultTask_attributes = {
-  .name = "defaultTask",
-  .stack_size = 128 * 4,
-  .priority = (osPriority_t) osPriorityNormal,
+    .name = "defaultTask",
+    .stack_size = 128 * 4,
+    .priority = (osPriority_t)osPriorityNormal,
 };
 /* Definitions for keyPressTask */
 osThreadId_t keyPressTaskHandle;
 const osThreadAttr_t keyPressTask_attributes = {
-  .name = "keyPressTask",
-  .stack_size = 128 * 4,
-  .priority = (osPriority_t) osPriorityLow,
+    .name = "keyPressTask",
+    .stack_size = 128 * 4,
+    .priority = (osPriority_t)osPriorityLow,
 };
 /* Definitions for nrf24Task */
 osThreadId_t nrf24TaskHandle;
 const osThreadAttr_t nrf24Task_attributes = {
-  .name = "nrf24Task",
-  .stack_size = 128 * 4,
-  .priority = (osPriority_t) osPriorityLow,
+    .name = "nrf24Task",
+    .stack_size = 128 * 4,
+    .priority = (osPriority_t)osPriorityLow,
 };
 /* Definitions for adcTask */
 osThreadId_t adcTaskHandle;
 const osThreadAttr_t adcTask_attributes = {
-  .name = "adcTask",
-  .stack_size = 128 * 4,
-  .priority = (osPriority_t) osPriorityLow,
+    .name = "adcTask",
+    .stack_size = 128 * 4,
+    .priority = (osPriority_t)osPriorityLow,
 };
 
 /* Private function prototypes -----------------------------------------------*/
@@ -95,10 +93,10 @@ void StartAdcTask(void *argument);
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
 
 /**
-  * @brief  FreeRTOS initialization
-  * @param  None
-  * @retval None
-  */
+ * @brief  FreeRTOS initialization
+ * @param  None
+ * @retval None
+ */
 void MX_FREERTOS_Init(void) {
   /* USER CODE BEGIN Init */
 
@@ -122,10 +120,12 @@ void MX_FREERTOS_Init(void) {
 
   /* Create the thread(s) */
   /* creation of defaultTask */
-  defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
+  defaultTaskHandle =
+      osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
 
   /* creation of keyPressTask */
-  keyPressTaskHandle = osThreadNew(StartKeyPressTask, NULL, &keyPressTask_attributes);
+  keyPressTaskHandle =
+      osThreadNew(StartKeyPressTask, NULL, &keyPressTask_attributes);
 
   /* creation of nrf24Task */
   nrf24TaskHandle = osThreadNew(StartNrf24Task, NULL, &nrf24Task_attributes);
@@ -140,23 +140,20 @@ void MX_FREERTOS_Init(void) {
   /* USER CODE BEGIN RTOS_EVENTS */
   /* add events, ... */
   /* USER CODE END RTOS_EVENTS */
-
 }
 
 /* USER CODE BEGIN Header_StartDefaultTask */
 /**
-  * @brief  Function implementing the defaultTask thread.
-  * @param  argument: Not used
-  * @retval None
-  */
+ * @brief  Function implementing the defaultTask thread.
+ * @param  argument: Not used
+ * @retval None
+ */
 /* USER CODE END Header_StartDefaultTask */
-void StartDefaultTask(void *argument)
-{
+void StartDefaultTask(void *argument) {
   /* USER CODE BEGIN StartDefaultTask */
   /* Infinite loop */
-  (void) argument;
-  for(;;)
-  {
+  (void)argument;
+  for (;;) {
     osDelay(1000);
   }
   /* USER CODE END StartDefaultTask */
@@ -164,18 +161,16 @@ void StartDefaultTask(void *argument)
 
 /* USER CODE BEGIN Header_StartKeyPressTask */
 /**
-* @brief Function implementing the keyPressTask thread.
-* @param argument: Not used
-* @retval None
-*/
+ * @brief Function implementing the keyPressTask thread.
+ * @param argument: Not used
+ * @retval None
+ */
 /* USER CODE END Header_StartKeyPressTask */
-void StartKeyPressTask(void *argument)
-{
+void StartKeyPressTask(void *argument) {
   /* USER CODE BEGIN StartKeyPressTask */
   /* Infinite loop */
   (void)argument;
-  for(;;)
-  {
+  for (;;) {
     // if(getKeyPressFlag(GPIOB, GPIO_PIN_0) == 1){
     //   HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
     // }
@@ -192,17 +187,16 @@ void StartKeyPressTask(void *argument)
 
 /* USER CODE BEGIN Header_StartNrf24Task */
 /**
-* @brief Function implementing the nrf24Task thread.
-* @param argument: Not used
-* @retval None
-*/
+ * @brief Function implementing the nrf24Task thread.
+ * @param argument: Not used
+ * @retval None
+ */
 /* USER CODE END Header_StartNrf24Task */
-void StartNrf24Task(void *argument)
-{
+void StartNrf24Task(void *argument) {
   /* USER CODE BEGIN StartNrf24Task */
   /* Infinite loop */
   (void)argument;
-   // 初始化NRF24L01
+  // 初始化NRF24L01
   NRF24_Init(&hspi1);
 
   // 检测NRF24L01是否存在
@@ -215,18 +209,16 @@ void StartNrf24Task(void *argument)
   NRF24_SetTxMode(nrf24_addr);
 
   uint16_t temp_data[5];
-  uint8_t sendData[3] = {0,0,100};
+  uint8_t sendData[3] = {0, 0, 100};
   osStatus_t osStatus;
-  for(;;)
-  {
-    
-    if(HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_0) == GPIO_PIN_RESET){
+  for (;;) {
+    return;
+    if (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_0) == GPIO_PIN_RESET) {
       sendData[0] = 100;
-    }else{
+    } else {
       sendData[0] = 0;
     }
-      
-      
+
     uint8_t status = NRF24_SendData(sendData, 3);
     osDelay(1);
   }
@@ -235,18 +227,38 @@ void StartNrf24Task(void *argument)
 
 /* USER CODE BEGIN Header_StartAdcTask */
 /**
-* @brief Function implementing the adcTask thread.
-* @param argument: Not used
-* @retval None
-*/
+ * @brief Function implementing the adcTask thread.
+ * @param argument: Not used
+ * @retval None
+ */
 /* USER CODE END Header_StartAdcTask */
-void StartAdcTask(void *argument)
-{
+void StartAdcTask(void *argument) {
   /* USER CODE BEGIN StartAdcTask */
   /* Infinite loop */
   (void)argument;
-  for(;;)
-  {
+  uint16_t adcVal[4] = {0, 0, 0, 0};
+  int16_t tx_data[3];
+
+  // 校准 ADC
+  HAL_ADCEx_Calibration_Start(&hadc1);
+
+  // 启动第一次 ADC DMA 转换
+  HAL_ADC_Start_DMA(&hadc1, (uint32_t *)adcVal, 4);
+  for (;;) {
+    HAL_ADC_Start_DMA(&hadc1, (uint32_t *)adcVal, 4);
+    uint32_t valx = adcVal[0]; // 获取ADC值
+    uint32_t valy = adcVal[1]; // 获取ADC值
+
+    tx_data[0] = 0; // y轴上 范围0-100； 接收侧收到数据x10，因为pwm分辨率是1000
+    tx_data[1] = 0; // y轴下 范围0-100； 接收侧收到数据x10，因为pwm分辨率是1000
+    tx_data[2] =
+        100; // x轴 舵机值 范围 50-150 对应 90度范围 ； 接收侧pwm分辨率2000
+
+    if (valx <= 1700) {
+      tx_data[0] = mapVal(0, 1700, 75, 100, valx);
+    }
+
+    uint8_t status = NRF24_SendData(tx_data, 3);
     osDelay(1);
   }
   /* USER CODE END StartAdcTask */
@@ -256,4 +268,3 @@ void StartAdcTask(void *argument)
 /* USER CODE BEGIN Application */
 
 /* USER CODE END Application */
-
