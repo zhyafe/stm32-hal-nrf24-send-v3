@@ -19,6 +19,10 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "FreeRTOS.h"
+#include "key.h"
+#include "stm32f103xb.h"
+#include "stm32f1xx.h"
+#include "stm32f1xx_hal_gpio.h"
 #include "task.h"
 #include "main.h"
 #include "cmsis_os.h"
@@ -54,6 +58,27 @@ const osThreadAttr_t defaultTask_attributes = {
   .stack_size = 128 * 4,
   .priority = (osPriority_t) osPriorityNormal,
 };
+/* Definitions for keyPressTask */
+osThreadId_t keyPressTaskHandle;
+const osThreadAttr_t keyPressTask_attributes = {
+  .name = "keyPressTask",
+  .stack_size = 128 * 4,
+  .priority = (osPriority_t) osPriorityLow,
+};
+/* Definitions for nrf24Task */
+osThreadId_t nrf24TaskHandle;
+const osThreadAttr_t nrf24Task_attributes = {
+  .name = "nrf24Task",
+  .stack_size = 128 * 4,
+  .priority = (osPriority_t) osPriorityLow,
+};
+/* Definitions for adcTask */
+osThreadId_t adcTaskHandle;
+const osThreadAttr_t adcTask_attributes = {
+  .name = "adcTask",
+  .stack_size = 128 * 4,
+  .priority = (osPriority_t) osPriorityLow,
+};
 
 /* Private function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN FunctionPrototypes */
@@ -61,6 +86,9 @@ const osThreadAttr_t defaultTask_attributes = {
 /* USER CODE END FunctionPrototypes */
 
 void StartDefaultTask(void *argument);
+void StartKeyPressTask(void *argument);
+void StartNrf24Task(void *argument);
+void StartAdcTask(void *argument);
 
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
 
@@ -94,6 +122,15 @@ void MX_FREERTOS_Init(void) {
   /* creation of defaultTask */
   defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
 
+  /* creation of keyPressTask */
+  keyPressTaskHandle = osThreadNew(StartKeyPressTask, NULL, &keyPressTask_attributes);
+
+  /* creation of nrf24Task */
+  nrf24TaskHandle = osThreadNew(StartNrf24Task, NULL, &nrf24Task_attributes);
+
+  /* creation of adcTask */
+  adcTaskHandle = osThreadNew(StartAdcTask, NULL, &adcTask_attributes);
+
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
   /* USER CODE END RTOS_THREADS */
@@ -118,10 +155,77 @@ void StartDefaultTask(void *argument)
   (void) argument;
   for(;;)
   {
-    HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
     osDelay(1000);
   }
   /* USER CODE END StartDefaultTask */
+}
+
+/* USER CODE BEGIN Header_StartKeyPressTask */
+/**
+* @brief Function implementing the keyPressTask thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_StartKeyPressTask */
+void StartKeyPressTask(void *argument)
+{
+  /* USER CODE BEGIN StartKeyPressTask */
+  /* Infinite loop */
+  (void)argument;
+  for(;;)
+  {
+    // if(getKeyPressFlag(GPIOB, GPIO_PIN_0) == 1){
+    //   HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
+    // }
+    if(HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_0) == GPIO_PIN_SET){
+      // Placeholder for NRF24 send function
+      HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, RESET);
+    }else{
+      HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, SET);
+      
+      
+    }
+    osDelay(1);
+  }
+  /* USER CODE END StartKeyPressTask */
+}
+
+/* USER CODE BEGIN Header_StartNrf24Task */
+/**
+* @brief Function implementing the nrf24Task thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_StartNrf24Task */
+void StartNrf24Task(void *argument)
+{
+  /* USER CODE BEGIN StartNrf24Task */
+  /* Infinite loop */
+  (void)argument;
+  for(;;)
+  {
+    osDelay(1);
+  }
+  /* USER CODE END StartNrf24Task */
+}
+
+/* USER CODE BEGIN Header_StartAdcTask */
+/**
+* @brief Function implementing the adcTask thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_StartAdcTask */
+void StartAdcTask(void *argument)
+{
+  /* USER CODE BEGIN StartAdcTask */
+  /* Infinite loop */
+  (void)argument;
+  for(;;)
+  {
+    osDelay(1);
+  }
+  /* USER CODE END StartAdcTask */
 }
 
 /* Private application code --------------------------------------------------*/
