@@ -20,6 +20,8 @@
 /* Includes ------------------------------------------------------------------*/
 #include "FreeRTOS.h"
 #include "key.h"
+#include "nrf24.h"
+#include "spi.h"
 #include "stm32f103xb.h"
 #include "stm32f1xx.h"
 #include "stm32f1xx_hal_gpio.h"
@@ -177,14 +179,12 @@ void StartKeyPressTask(void *argument)
     // if(getKeyPressFlag(GPIOB, GPIO_PIN_0) == 1){
     //   HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
     // }
-    if(HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_0) == GPIO_PIN_SET){
-      // Placeholder for NRF24 send function
-      HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, RESET);
-    }else{
-      HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, SET);
-      
-      
-    }
+    // if(HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_0) == GPIO_PIN_SET){
+    //   // Placeholder for NRF24 send function
+    //   HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, RESET);
+    // }else{
+    //   HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, SET);
+    // }
     osDelay(1);
   }
   /* USER CODE END StartKeyPressTask */
@@ -202,8 +202,32 @@ void StartNrf24Task(void *argument)
   /* USER CODE BEGIN StartNrf24Task */
   /* Infinite loop */
   (void)argument;
+   // 初始化NRF24L01
+  NRF24_Init(&hspi1);
+
+  // 检测NRF24L01是否存在
+  if (NRF24_Check() != 1) {
+    // 未检测到NRF24L01，可以在这里添加错误处理
+    while (1)
+      ;
+  }
+  // 设置为发送模式
+  NRF24_SetTxMode(nrf24_addr);
+
+  uint16_t temp_data[5];
+  uint8_t sendData[3] = {0,0,100};
+  osStatus_t osStatus;
   for(;;)
   {
+    
+    if(HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_0) == GPIO_PIN_RESET){
+      sendData[0] = 100;
+    }else{
+      sendData[0] = 0;
+    }
+      
+      
+    uint8_t status = NRF24_SendData(sendData, 3);
     osDelay(1);
   }
   /* USER CODE END StartNrf24Task */

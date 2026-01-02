@@ -6,10 +6,10 @@
 #include <string.h>
 
 // NRF24L01引脚定义
-#define NRF24_CE_PORT    GPIOA
-#define NRF24_CE_PIN     GPIO_PIN_3
-#define NRF24_CS_PORT    GPIOA
-#define NRF24_CS_PIN     GPIO_PIN_4
+#define NRF24_CE_PORT    GPIOC
+#define NRF24_CE_PIN     GPIO_PIN_15
+#define NRF24_CS_PORT    GPIOC
+#define NRF24_CS_PIN     GPIO_PIN_14
 
 // NRF24L01命令
 #define NRF24_CMD_R_REGISTER    0x00
