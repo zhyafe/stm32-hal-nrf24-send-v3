@@ -19,16 +19,17 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "FreeRTOS.h"
-#include "adc.h"
-#include "cmsis_os.h"
-#include "main.h"
-#include "nrf24.h"
-#include "spi.h"
 #include "task.h"
-#include "utils.h"
+#include "main.h"
+#include "cmsis_os.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "spi.h"
+#include "nrf24.h"
+#include "adc.h"
+#include "utils.h"
+#include "oled.h"
 
 /* USER CODE END Includes */
 
@@ -54,30 +55,37 @@
 /* Definitions for defaultTask */
 osThreadId_t defaultTaskHandle;
 const osThreadAttr_t defaultTask_attributes = {
-    .name = "defaultTask",
-    .stack_size = 128 * 4,
-    .priority = (osPriority_t)osPriorityNormal,
+  .name = "defaultTask",
+  .stack_size = 128 * 4,
+  .priority = (osPriority_t) osPriorityNormal,
 };
 /* Definitions for keyPressTask */
 osThreadId_t keyPressTaskHandle;
 const osThreadAttr_t keyPressTask_attributes = {
-    .name = "keyPressTask",
-    .stack_size = 128 * 4,
-    .priority = (osPriority_t)osPriorityLow,
+  .name = "keyPressTask",
+  .stack_size = 128 * 4,
+  .priority = (osPriority_t) osPriorityLow,
 };
 /* Definitions for nrf24Task */
 osThreadId_t nrf24TaskHandle;
 const osThreadAttr_t nrf24Task_attributes = {
-    .name = "nrf24Task",
-    .stack_size = 128 * 4,
-    .priority = (osPriority_t)osPriorityLow,
+  .name = "nrf24Task",
+  .stack_size = 128 * 4,
+  .priority = (osPriority_t) osPriorityLow,
 };
 /* Definitions for adcTask */
 osThreadId_t adcTaskHandle;
 const osThreadAttr_t adcTask_attributes = {
-    .name = "adcTask",
-    .stack_size = 128 * 4,
-    .priority = (osPriority_t)osPriorityLow,
+  .name = "adcTask",
+  .stack_size = 128 * 4,
+  .priority = (osPriority_t) osPriorityLow,
+};
+/* Definitions for oledTask */
+osThreadId_t oledTaskHandle;
+const osThreadAttr_t oledTask_attributes = {
+  .name = "oledTask",
+  .stack_size = 128 * 4,
+  .priority = (osPriority_t) osPriorityLow,
 };
 
 /* Private function prototypes -----------------------------------------------*/
@@ -89,14 +97,15 @@ void StartDefaultTask(void *argument);
 void StartKeyPressTask(void *argument);
 void StartNrf24Task(void *argument);
 void StartAdcTask(void *argument);
+void StartOledTask(void *argument);
 
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
 
 /**
- * @brief  FreeRTOS initialization
- * @param  None
- * @retval None
- */
+  * @brief  FreeRTOS initialization
+  * @param  None
+  * @retval None
+  */
 void MX_FREERTOS_Init(void) {
   /* USER CODE BEGIN Init */
 
@@ -120,18 +129,19 @@ void MX_FREERTOS_Init(void) {
 
   /* Create the thread(s) */
   /* creation of defaultTask */
-  defaultTaskHandle =
-      osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
+  defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
 
   /* creation of keyPressTask */
-  keyPressTaskHandle =
-      osThreadNew(StartKeyPressTask, NULL, &keyPressTask_attributes);
+  keyPressTaskHandle = osThreadNew(StartKeyPressTask, NULL, &keyPressTask_attributes);
 
   /* creation of nrf24Task */
   nrf24TaskHandle = osThreadNew(StartNrf24Task, NULL, &nrf24Task_attributes);
 
   /* creation of adcTask */
   adcTaskHandle = osThreadNew(StartAdcTask, NULL, &adcTask_attributes);
+
+  /* creation of oledTask */
+  oledTaskHandle = osThreadNew(StartOledTask, NULL, &oledTask_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -140,6 +150,7 @@ void MX_FREERTOS_Init(void) {
   /* USER CODE BEGIN RTOS_EVENTS */
   /* add events, ... */
   /* USER CODE END RTOS_EVENTS */
+
 }
 
 /* USER CODE BEGIN Header_StartDefaultTask */
@@ -149,7 +160,8 @@ void MX_FREERTOS_Init(void) {
  * @retval None
  */
 /* USER CODE END Header_StartDefaultTask */
-void StartDefaultTask(void *argument) {
+void StartDefaultTask(void *argument)
+{
   /* USER CODE BEGIN StartDefaultTask */
   /* Infinite loop */
   (void)argument;
@@ -166,7 +178,8 @@ void StartDefaultTask(void *argument) {
  * @retval None
  */
 /* USER CODE END Header_StartKeyPressTask */
-void StartKeyPressTask(void *argument) {
+void StartKeyPressTask(void *argument)
+{
   /* USER CODE BEGIN StartKeyPressTask */
   /* Infinite loop */
   (void)argument;
@@ -192,7 +205,8 @@ void StartKeyPressTask(void *argument) {
  * @retval None
  */
 /* USER CODE END Header_StartNrf24Task */
-void StartNrf24Task(void *argument) {
+void StartNrf24Task(void *argument)
+{
   /* USER CODE BEGIN StartNrf24Task */
   /* Infinite loop */
   (void)argument;
@@ -232,10 +246,13 @@ void StartNrf24Task(void *argument) {
  * @retval None
  */
 /* USER CODE END Header_StartAdcTask */
-void StartAdcTask(void *argument) {
+void StartAdcTask(void *argument)
+{
   /* USER CODE BEGIN StartAdcTask */
   /* Infinite loop */
   (void)argument;
+
+
   uint16_t adcVal[4] = {0, 0, 0, 0};
   int16_t tx_data[3];
 
@@ -264,7 +281,30 @@ void StartAdcTask(void *argument) {
   /* USER CODE END StartAdcTask */
 }
 
+/* USER CODE BEGIN Header_StartOledTask */
+/**
+* @brief Function implementing the oledTask thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_StartOledTask */
+void StartOledTask(void *argument)
+{
+  /* USER CODE BEGIN StartOledTask */
+  /* Infinite loop */
+  (void)argument;
+  OLED_Init();
+  OLED_ShowString(0, 0, "STM32 NRF24L01");
+  OLED_Refresh();
+  for(;;)
+  {
+    osDelay(1);
+  }
+  /* USER CODE END StartOledTask */
+}
+
 /* Private application code --------------------------------------------------*/
 /* USER CODE BEGIN Application */
 
 /* USER CODE END Application */
+
