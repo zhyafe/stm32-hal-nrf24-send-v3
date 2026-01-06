@@ -215,19 +215,20 @@ void StartNrf24Task(void *argument) {
   // osStatus_t osStatus;
   for (;;) {
     osStatus = osMessageQueueGet(adcQueueHandle, adcVal, NULL, osWaitForever);
-    for (uint8_t i = 0; i < sizeof(sendData) / sizeof(sendData[0]); i++) {
-      sendData[i] = 0;
-    }
 
     if (osStatus == osOK) {
-      sendData[0] = mapVal(0, 4095, 0, 200, adcVal[0]);
-      sendData[1] = mapVal(0, 4095, 0, 200, adcVal[1]);
-      sendData[2] = mapVal(0, 4095, 0, 200, adcVal[2]);
-      sendData[3] = mapVal(0, 4095, 0, 200, adcVal[3]);
-    }
 
-    osMessageQueuePut(oledSendDataQueueHandle, sendData, 0, 0);
-    osMessageQueuePut(oledAdcQueueHandle, adcVal, 0, 0);
+      for (uint8_t i = 0; i < sizeof(sendData) / sizeof(sendData[0]); i++) {
+        if (adcVal[i] >= 2100)
+          sendData[i] = mapVal(2100, 4095, 101, 200, adcVal[i]);
+        else if (adcVal[i] <= 1900)
+          sendData[i] = mapVal(0, 1900, 0, 99, adcVal[i]);
+        else
+          sendData[i] = 100;
+      }
+      osMessageQueuePut(oledSendDataQueueHandle, sendData, 0, 0);
+      osMessageQueuePut(oledAdcQueueHandle, adcVal, 0, 0);
+    }
 
     // uint8_t status = NRF24_SendData(sendData, 3);
     osDelay(200);
