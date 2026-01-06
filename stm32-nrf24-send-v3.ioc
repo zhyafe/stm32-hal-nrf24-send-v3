@@ -1,8 +1,8 @@
 #MicroXplorer Configuration settings - do not modify
 ADC1.Channel-0\#ChannelRegularConversion=ADC_CHANNEL_0
-ADC1.Channel-1\#ChannelRegularConversion=ADC_CHANNEL_0
-ADC1.Channel-2\#ChannelRegularConversion=ADC_CHANNEL_0
-ADC1.Channel-3\#ChannelRegularConversion=ADC_CHANNEL_0
+ADC1.Channel-1\#ChannelRegularConversion=ADC_CHANNEL_1
+ADC1.Channel-2\#ChannelRegularConversion=ADC_CHANNEL_2
+ADC1.Channel-3\#ChannelRegularConversion=ADC_CHANNEL_3
 ADC1.ContinuousConvMode=DISABLE
 ADC1.IPParameters=Rank-0\#ChannelRegularConversion,Channel-0\#ChannelRegularConversion,SamplingTime-0\#ChannelRegularConversion,NbrOfConversionFlag,master,Rank-1\#ChannelRegularConversion,Channel-1\#ChannelRegularConversion,SamplingTime-1\#ChannelRegularConversion,Rank-2\#ChannelRegularConversion,Channel-2\#ChannelRegularConversion,SamplingTime-2\#ChannelRegularConversion,Rank-3\#ChannelRegularConversion,Channel-3\#ChannelRegularConversion,SamplingTime-3\#ChannelRegularConversion,NbrOfConversion,ContinuousConvMode
 ADC1.NbrOfConversion=4
@@ -30,9 +30,10 @@ Dma.ADC1.0.Priority=DMA_PRIORITY_LOW
 Dma.ADC1.0.RequestParameters=Instance,Direction,PeriphInc,MemInc,PeriphDataAlignment,MemDataAlignment,Mode,Priority
 Dma.Request0=ADC1
 Dma.RequestsNb=1
-FREERTOS.FootprintOK=false
-FREERTOS.IPParameters=Tasks01,FootprintOK
-FREERTOS.Tasks01=defaultTask,24,128,StartDefaultTask,Default,NULL,Dynamic,NULL,NULL;keyPressTask,8,128,StartKeyPressTask,Default,NULL,Dynamic,NULL,NULL;nrf24Task,8,128,StartNrf24Task,Default,NULL,Dynamic,NULL,NULL;adcTask,8,128,StartAdcTask,Default,NULL,Dynamic,NULL,NULL;oledTask,8,128,StartOledTask,Default,NULL,Dynamic,NULL,NULL
+FREERTOS.FootprintOK=true
+FREERTOS.IPParameters=Tasks01,FootprintOK,Queues01
+FREERTOS.Queues01=adcQueue,1,8,1,Dynamic,NULL,NULL;oledAdcQueue,1,8,1,Dynamic,NULL,NULL;oledSendDataQueue,1,10,1,Dynamic,NULL,NULL
+FREERTOS.Tasks01=defaultTask,8,128,StartDefaultTask,Default,NULL,Dynamic,NULL,NULL;nrf24Task,41,128,StartNrf24Task,Default,NULL,Dynamic,NULL,NULL;adcTask,40,128,StartAdcTask,Default,NULL,Dynamic,NULL,NULL;oledTask,9,128,StartOledTask,Default,NULL,Dynamic,NULL,NULL
 File.Version=6
 GPIO.groupedBy=Group By Peripherals
 KeepUserPlacement=false

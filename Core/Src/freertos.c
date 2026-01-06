@@ -19,17 +19,19 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "FreeRTOS.h"
-#include "task.h"
-#include "main.h"
 #include "cmsis_os.h"
+#include "cmsis_os2.h"
+#include "main.h"
+#include "task.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "spi.h"
-#include "nrf24.h"
 #include "adc.h"
-#include "utils.h"
+#include "nrf24.h"
 #include "oled.h"
+#include "spi.h"
+#include "utils.h"
+#include <stdint.h>
 
 /* USER CODE END Includes */
 
@@ -55,38 +57,41 @@
 /* Definitions for defaultTask */
 osThreadId_t defaultTaskHandle;
 const osThreadAttr_t defaultTask_attributes = {
-  .name = "defaultTask",
-  .stack_size = 128 * 4,
-  .priority = (osPriority_t) osPriorityNormal,
-};
-/* Definitions for keyPressTask */
-osThreadId_t keyPressTaskHandle;
-const osThreadAttr_t keyPressTask_attributes = {
-  .name = "keyPressTask",
-  .stack_size = 128 * 4,
-  .priority = (osPriority_t) osPriorityLow,
+    .name = "defaultTask",
+    .stack_size = 128 * 4,
+    .priority = (osPriority_t)osPriorityLow,
 };
 /* Definitions for nrf24Task */
 osThreadId_t nrf24TaskHandle;
 const osThreadAttr_t nrf24Task_attributes = {
-  .name = "nrf24Task",
-  .stack_size = 128 * 4,
-  .priority = (osPriority_t) osPriorityLow,
+    .name = "nrf24Task",
+    .stack_size = 128 * 4,
+    .priority = (osPriority_t)osPriorityHigh1,
 };
 /* Definitions for adcTask */
 osThreadId_t adcTaskHandle;
 const osThreadAttr_t adcTask_attributes = {
-  .name = "adcTask",
-  .stack_size = 128 * 4,
-  .priority = (osPriority_t) osPriorityLow,
+    .name = "adcTask",
+    .stack_size = 128 * 4,
+    .priority = (osPriority_t)osPriorityHigh,
 };
 /* Definitions for oledTask */
 osThreadId_t oledTaskHandle;
 const osThreadAttr_t oledTask_attributes = {
-  .name = "oledTask",
-  .stack_size = 128 * 4,
-  .priority = (osPriority_t) osPriorityLow,
+    .name = "oledTask",
+    .stack_size = 128 * 4,
+    .priority = (osPriority_t)osPriorityLow1,
 };
+/* Definitions for adcQueue */
+osMessageQueueId_t adcQueueHandle;
+const osMessageQueueAttr_t adcQueue_attributes = {.name = "adcQueue"};
+/* Definitions for oledAdcQueue */
+osMessageQueueId_t oledAdcQueueHandle;
+const osMessageQueueAttr_t oledAdcQueue_attributes = {.name = "oledAdcQueue"};
+/* Definitions for oledSendDataQueue */
+osMessageQueueId_t oledSendDataQueueHandle;
+const osMessageQueueAttr_t oledSendDataQueue_attributes = {
+    .name = "oledSendDataQueue"};
 
 /* Private function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN FunctionPrototypes */
@@ -94,7 +99,6 @@ const osThreadAttr_t oledTask_attributes = {
 /* USER CODE END FunctionPrototypes */
 
 void StartDefaultTask(void *argument);
-void StartKeyPressTask(void *argument);
 void StartNrf24Task(void *argument);
 void StartAdcTask(void *argument);
 void StartOledTask(void *argument);
@@ -102,10 +106,10 @@ void StartOledTask(void *argument);
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
 
 /**
-  * @brief  FreeRTOS initialization
-  * @param  None
-  * @retval None
-  */
+ * @brief  FreeRTOS initialization
+ * @param  None
+ * @retval None
+ */
 void MX_FREERTOS_Init(void) {
   /* USER CODE BEGIN Init */
 
@@ -123,16 +127,25 @@ void MX_FREERTOS_Init(void) {
   /* start timers, add new ones, ... */
   /* USER CODE END RTOS_TIMERS */
 
+  /* Create the queue(s) */
+  /* creation of adcQueue */
+  adcQueueHandle = osMessageQueueNew(1, 8, &adcQueue_attributes);
+
+  /* creation of oledAdcQueue */
+  oledAdcQueueHandle = osMessageQueueNew(1, 8, &oledAdcQueue_attributes);
+
+  /* creation of oledSendDataQueue */
+  oledSendDataQueueHandle =
+      osMessageQueueNew(1, 10, &oledSendDataQueue_attributes);
+
   /* USER CODE BEGIN RTOS_QUEUES */
   /* add queues, ... */
   /* USER CODE END RTOS_QUEUES */
 
   /* Create the thread(s) */
   /* creation of defaultTask */
-  defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
-
-  /* creation of keyPressTask */
-  keyPressTaskHandle = osThreadNew(StartKeyPressTask, NULL, &keyPressTask_attributes);
+  defaultTaskHandle =
+      osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
 
   /* creation of nrf24Task */
   nrf24TaskHandle = osThreadNew(StartNrf24Task, NULL, &nrf24Task_attributes);
@@ -150,7 +163,6 @@ void MX_FREERTOS_Init(void) {
   /* USER CODE BEGIN RTOS_EVENTS */
   /* add events, ... */
   /* USER CODE END RTOS_EVENTS */
-
 }
 
 /* USER CODE BEGIN Header_StartDefaultTask */
@@ -160,42 +172,15 @@ void MX_FREERTOS_Init(void) {
  * @retval None
  */
 /* USER CODE END Header_StartDefaultTask */
-void StartDefaultTask(void *argument)
-{
+void StartDefaultTask(void *argument) {
   /* USER CODE BEGIN StartDefaultTask */
   /* Infinite loop */
   (void)argument;
   for (;;) {
+    HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
     osDelay(1000);
   }
   /* USER CODE END StartDefaultTask */
-}
-
-/* USER CODE BEGIN Header_StartKeyPressTask */
-/**
- * @brief Function implementing the keyPressTask thread.
- * @param argument: Not used
- * @retval None
- */
-/* USER CODE END Header_StartKeyPressTask */
-void StartKeyPressTask(void *argument)
-{
-  /* USER CODE BEGIN StartKeyPressTask */
-  /* Infinite loop */
-  (void)argument;
-  for (;;) {
-    // if(getKeyPressFlag(GPIOB, GPIO_PIN_0) == 1){
-    //   HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
-    // }
-    // if(HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_0) == GPIO_PIN_SET){
-    //   // Placeholder for NRF24 send function
-    //   HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, RESET);
-    // }else{
-    //   HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, SET);
-    // }
-    osDelay(1);
-  }
-  /* USER CODE END StartKeyPressTask */
 }
 
 /* USER CODE BEGIN Header_StartNrf24Task */
@@ -205,11 +190,14 @@ void StartKeyPressTask(void *argument)
  * @retval None
  */
 /* USER CODE END Header_StartNrf24Task */
-void StartNrf24Task(void *argument)
-{
+void StartNrf24Task(void *argument) {
   /* USER CODE BEGIN StartNrf24Task */
   /* Infinite loop */
   (void)argument;
+  osStatus_t osStatus;
+  uint16_t adcVal[4] = {0, 0, 0, 0};
+  uint8_t sendData[10] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+
   // 初始化NRF24L01
   NRF24_Init(&hspi1);
 
@@ -222,19 +210,27 @@ void StartNrf24Task(void *argument)
   // 设置为发送模式
   NRF24_SetTxMode(nrf24_addr);
 
-  uint16_t temp_data[5];
-  uint8_t sendData[3] = {0, 0, 100};
-  osStatus_t osStatus;
+  // uint16_t temp_data[5];
+  // uint8_t sendData[3] = {0, 0, 100};
+  // osStatus_t osStatus;
   for (;;) {
-    return;
-    if (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_0) == GPIO_PIN_RESET) {
-      sendData[0] = 100;
-    } else {
-      sendData[0] = 0;
+    osStatus = osMessageQueueGet(adcQueueHandle, adcVal, NULL, osWaitForever);
+    for (uint8_t i = 0; i < sizeof(sendData) / sizeof(sendData[0]); i++) {
+      sendData[i] = 0;
     }
 
-    uint8_t status = NRF24_SendData(sendData, 3);
-    osDelay(1);
+    if (osStatus == osOK) {
+      sendData[0] = mapVal(0, 4095, 0, 200, adcVal[0]);
+      sendData[1] = mapVal(0, 4095, 0, 200, adcVal[1]);
+      sendData[2] = mapVal(0, 4095, 0, 200, adcVal[2]);
+      sendData[3] = mapVal(0, 4095, 0, 200, adcVal[3]);
+    }
+
+    osMessageQueuePut(oledSendDataQueueHandle, sendData, 0, 0);
+    osMessageQueuePut(oledAdcQueueHandle, adcVal, 0, 0);
+
+    // uint8_t status = NRF24_SendData(sendData, 3);
+    osDelay(200);
   }
   /* USER CODE END StartNrf24Task */
 }
@@ -246,59 +242,82 @@ void StartNrf24Task(void *argument)
  * @retval None
  */
 /* USER CODE END Header_StartAdcTask */
-void StartAdcTask(void *argument)
-{
+void StartAdcTask(void *argument) {
   /* USER CODE BEGIN StartAdcTask */
   /* Infinite loop */
   (void)argument;
-
-
   uint16_t adcVal[4] = {0, 0, 0, 0};
-  int16_t tx_data[3];
-
+  uint16_t old_msg[4] = {0, 0, 0, 0};
+  uint16_t queue_count;
   // 校准 ADC
   HAL_ADCEx_Calibration_Start(&hadc1);
 
-  // 启动第一次 ADC DMA 转换
-  HAL_ADC_Start_DMA(&hadc1, (uint32_t *)adcVal, 4);
+  // // 启动第一次 ADC DMA 转换
+  // HAL_ADC_Start_DMA(&hadc1, (uint32_t *)adcVal, 4);
+  /* Infinite loop */
   for (;;) {
+
     HAL_ADC_Start_DMA(&hadc1, (uint32_t *)adcVal, 4);
-    uint32_t valx = adcVal[0]; // 获取ADC值
-    uint32_t valy = adcVal[1]; // 获取ADC值
 
-    tx_data[0] = 0; // y轴上 范围0-100； 接收侧收到数据x10，因为pwm分辨率是1000
-    tx_data[1] = 0; // y轴下 范围0-100； 接收侧收到数据x10，因为pwm分辨率是1000
-    tx_data[2] =
-        100; // x轴 舵机值 范围 50-150 对应 90度范围 ； 接收侧pwm分辨率2000
+    // 2. 检查队列当前消息数（非阻塞）
+    queue_count = osMessageQueueGetCount(adcQueueHandle);
 
-    if (valx <= 1700) {
-      tx_data[0] = mapVal(0, 1700, 75, 100, valx);
+    // 3. 如果队列已满（有未被读取的旧消息），先清空旧消息
+    if (queue_count > 0) {
+      // 非阻塞读取旧消息（丢弃，不处理）
+      osMessageQueueGet(adcQueueHandle, old_msg, NULL, 0);
     }
 
-    uint8_t status = NRF24_SendData(tx_data, 3);
-    osDelay(1);
+    osMessageQueuePut(adcQueueHandle, adcVal, 0, 0);
+    // tx_data[0] = 0;
+
+    // uint8_t status = NRF24_SendData(tx_data, 5);
+    osDelay(200);
   }
   /* USER CODE END StartAdcTask */
 }
 
 /* USER CODE BEGIN Header_StartOledTask */
 /**
-* @brief Function implementing the oledTask thread.
-* @param argument: Not used
-* @retval None
-*/
+ * @brief Function implementing the oledTask thread.
+ * @param argument: Not used
+ * @retval None
+ */
 /* USER CODE END Header_StartOledTask */
-void StartOledTask(void *argument)
-{
+void StartOledTask(void *argument) {
   /* USER CODE BEGIN StartOledTask */
   /* Infinite loop */
   (void)argument;
+  uint16_t oledAdcVal[4] = {0, 0, 0, 0};
+  uint8_t oledSendDataVal[10] = {0, 0, 0, 0, 0, 0, 0, 0};
+  osStatus_t osAdcStatus;
+  osStatus_t osSendDataStatus;
   OLED_Init();
-  OLED_ShowString(0, 0, "STM32 NRF24L01");
+  OLED_ShowString(0, 0, "init");
   OLED_Refresh();
-  for(;;)
-  {
-    osDelay(1);
+  for (;;) {
+    OLED_Clear();
+    // 阻塞读取消息（永久等待）
+    osAdcStatus =
+        osMessageQueueGet(oledAdcQueueHandle, oledAdcVal, NULL, osWaitForever);
+    if (osAdcStatus == osOK) {
+      OLED_ShowNum(0, 0, oledAdcVal[0]);
+      OLED_ShowNum(30, 0, oledAdcVal[1]);
+      OLED_ShowNum(60, 0, oledAdcVal[2]);
+      OLED_ShowNum(90, 0, oledAdcVal[3]);
+    }
+
+    osSendDataStatus = osMessageQueueGet(oledSendDataQueueHandle,
+                                         oledSendDataVal, NULL, osWaitForever);
+    if (osSendDataStatus == osOK) {
+
+      OLED_ShowNum(0, 1, oledSendDataVal[0]);
+      OLED_ShowNum(30, 1, oledSendDataVal[1]);
+      OLED_ShowNum(60, 1, oledSendDataVal[2]);
+      OLED_ShowNum(90, 1, oledSendDataVal[3]);
+    }
+    OLED_Refresh();
+    osDelay(100);
   }
   /* USER CODE END StartOledTask */
 }
@@ -307,4 +326,3 @@ void StartOledTask(void *argument)
 /* USER CODE BEGIN Application */
 
 /* USER CODE END Application */
-
