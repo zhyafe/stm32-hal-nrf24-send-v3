@@ -228,9 +228,10 @@ void StartNrf24Task(void *argument) {
       }
       osMessageQueuePut(oledSendDataQueueHandle, sendData, 0, 0);
       osMessageQueuePut(oledAdcQueueHandle, adcVal, 0, 0);
+
+      uint8_t status = NRF24_SendData(sendData, 4);
     }
 
-    // uint8_t status = NRF24_SendData(sendData, 3);
     osDelay(200);
   }
   /* USER CODE END StartNrf24Task */
