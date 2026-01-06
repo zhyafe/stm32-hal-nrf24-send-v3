@@ -22,6 +22,8 @@
 #include "cmsis_os.h"
 #include "cmsis_os2.h"
 #include "main.h"
+#include "stm32f103xb.h"
+#include "stm32f1xx_hal_gpio.h"
 #include "task.h"
 
 /* Private includes ----------------------------------------------------------*/
@@ -177,7 +179,7 @@ void StartDefaultTask(void *argument) {
   /* Infinite loop */
   (void)argument;
   for (;;) {
-    HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
+    // HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
     osDelay(1000);
   }
   /* USER CODE END StartDefaultTask */
@@ -194,6 +196,7 @@ void StartNrf24Task(void *argument) {
   /* USER CODE BEGIN StartNrf24Task */
   /* Infinite loop */
   (void)argument;
+  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, SET);
   osStatus_t osStatus;
   uint16_t adcVal[4] = {0, 0, 0, 0};
   uint8_t sendData[10] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
@@ -230,6 +233,14 @@ void StartNrf24Task(void *argument) {
       osMessageQueuePut(oledAdcQueueHandle, adcVal, 0, 0);
 
       uint8_t status = NRF24_SendData(sendData, 4);
+      if (status == 0) {
+        // 发送成功
+        HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
+      } else if (status == 1) {
+        // 发送失败，达到最大重发次数
+      } else if (status == 2) {
+        // 超时未发送成功
+      }
     }
 
     osDelay(200);
