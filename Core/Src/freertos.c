@@ -243,7 +243,7 @@ void StartNrf24Task(void *argument) {
       }
     }
 
-    osDelay(200);
+    osDelay(20);
   }
   /* USER CODE END StartNrf24Task */
 }
@@ -285,7 +285,7 @@ void StartAdcTask(void *argument) {
     // tx_data[0] = 0;
 
     // uint8_t status = NRF24_SendData(tx_data, 5);
-    osDelay(200);
+    osDelay(20);
   }
   /* USER CODE END StartAdcTask */
 }
