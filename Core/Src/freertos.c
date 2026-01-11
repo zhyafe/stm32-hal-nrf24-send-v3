@@ -20,10 +20,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "FreeRTOS.h"
 #include "cmsis_os.h"
-#include "cmsis_os2.h"
 #include "main.h"
-#include "stm32f103xb.h"
-#include "stm32f1xx_hal_gpio.h"
 #include "task.h"
 
 /* Private includes ----------------------------------------------------------*/
@@ -229,10 +226,49 @@ void StartNrf24Task(void *argument) {
         else
           sendData[i] = 100;
       }
+      if (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_8) == RESET) {
+        // 如果PB12引脚为低电平，则将发送数据取反
+        sendData[4] = 0;
+      } else if (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_9) == RESET) {
+        // 如果PB12引脚为低电平，则将发送数据取反
+        sendData[4] = 200;
+      } else {
+        sendData[4] = 100;
+      }
+      if (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_5) == RESET) {
+        // 如果PB12引脚为低电平，则将发送数据取反
+        sendData[5] = 0;
+      } else if (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_4) == RESET) {
+        // 如果PB12引脚为低电平，则将发送数据取反
+        sendData[5] = 200;
+      } else {
+        sendData[5] = 100;
+      }
+
+      if (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_12) == RESET) {
+        // 如果PB12引脚为低电平，则将发送数据取反
+        sendData[6] = 0;
+      } else if (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_13) == RESET) {
+        // 如果PB12引脚为低电平，则将发送数据取反
+        sendData[6] = 200;
+      } else {
+        sendData[6] = 100;
+      }
+
+      if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_8) == RESET) {
+        // 如果PB12引脚为低电平，则将发送数据取反
+        sendData[7] = 0;
+      } else if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_9) == RESET) {
+        // 如果PB12引脚为低电平，则将发送数据取反
+        sendData[7] = 200;
+      } else {
+        sendData[7] = 100;
+      }
+
       osMessageQueuePut(oledSendDataQueueHandle, sendData, 0, 0);
       osMessageQueuePut(oledAdcQueueHandle, adcVal, 0, 0);
 
-      uint8_t status = NRF24_SendData(sendData, 4);
+      uint8_t status = NRF24_SendData(sendData, 10);
       if (status == 0) {
         // 发送成功
         HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);

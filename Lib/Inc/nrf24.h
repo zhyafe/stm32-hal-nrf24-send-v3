@@ -39,7 +39,7 @@
 #define NRF24_REG_FIFO_STATUS   0x17
 
 // 数据长度定义
-#define NRF24_PAYLOAD_SIZE      4 //最大32
+#define NRF24_PAYLOAD_SIZE      10 //最大32
 #define NRF24_ADDR_LEN          5
 
 extern uint8_t nrf24_addr[5];
